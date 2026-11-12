@@ -1,0 +1,42 @@
+# Local course materials and environments
+Theory/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# OS and editors
+.DS_Store
+.idea/
+.vscode/
+
+# Extracted datasets and generated baseline artifacts
+data/*
+!data/README.md
+third_party/TaNP/data/
+third_party/TaNP/save_model_cpu/
+third_party/TaNP/output_att
+
+# Raw experiment runs: checkpoints, configs and verbose logs
+artifacts/runs/*
+!artifacts/runs/.gitkeep
+
+# Generated metrics and figures
+results/*
+!results/.gitkeep
+!results/README.md
+paper/figures/*
+!paper/figures/.gitkeep
+
+# LaTeX build files
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.pdf
+paper/*.toc

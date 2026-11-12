@@ -1,26 +1,113 @@
-# TaNP
-The source code is for our paper: ”Task-adaptive Neural Process for User Cold-Start Recommendation" accepted in WWW 2021.
+# Перенос группового знания в cold-start рекомендациях
 
+Исследовательский проект курса «Научная студия». Мы изучаем, как групповое знание в нейронных процессах влияет на рекомендации новым пользователям. Базовые модели — TaNP и FANP. Первая задача проекта — воспроизвести TaNP и получить полностью повторяемый эксперимент.
+
+## Исследовательская гипотеза
+
+Для отдельных новых пользователей групповое знание может ухудшать качество рекомендаций по сравнению с моделью, использующей только личную историю.
+
+## Текущий этап
+
+- авторский код TaNP сохранён отдельно в `third_party/TaNP`;
+- авторский Gating-FiLM включён как явный вариант декодера;
+- подготовлены CPU-конфигурации и последовательный запуск трёх датасетов на Colab T4;
+- компактные эпизоды хранят идентификаторы вместо гигантских one-hot-тензоров;
+- вычисления и построение графиков разделены на разные модули;
+- `run_experiment.py` служит единственной точкой запуска;
+- результаты сохраняются отдельно от checkpoints и исходного кода.
+
+## Быстрый старт
+
+Подготовить окружение:
+
+```bash
+./scripts/setup_cpu.sh
 ```
-@inproceedings{lincsr2021,
-  title={Task-adaptive Neural Process for User Cold-Start Recommendation},
-  author={Lin, Xixun and Wu, Jia and Zhou, Chuan and Pan, Shirui and Cao, Yanan and Wang, Bin},
-  booktitle={ACM International World Wide Web Conferences (WWW)},
-  year={2021}
-}
+
+Если данные ещё не распакованы:
+
+```bash
+cd third_party/TaNP
+unzip data.zip
+cd ../..
 ```
-## Requirements
-python == 3.6.3  
-  torch == 1.1  
-   numpy == 1.17  
-     scipy == 1.3.1  
-     scikit-learn == 0.21.3
-## Datasets 
-MoviesLens-1M is provided by MeLU, and you can find it from [here](https://github.com/hoyeoplee/MeLU).  
-  Last.FM is provided by MKR, and you can find it from [here](https://github.com/hwwang55/MKR).  
-      Gowalla is provided by NGCF, and you can find it from [here](https://github.com/xiangwang1223/neural_graph_collaborative_filtering).
-## How to use
-The utils/loader is used for data preprocessing, and you can customize this part for your own data.  
-  Use the following commands for running a sub-dataset:  
-    unzip data.zip file  
-      zsh train.sh # Training with default hyper-parameters.
+
+Проверить команду без обучения:
+
+```bash
+python run_experiment.py --config configs/smoke.json --dry-run
+```
+
+Запустить короткий эксперимент. Одна команда выполнит обучение, сохранит метрики и построит графики:
+
+```bash
+python run_experiment.py --config configs/smoke.json
+```
+
+Полный CPU-запуск:
+
+```bash
+python run_experiment.py --config configs/baseline_cpu.json
+```
+
+## Обучение Gating-FiLM на Colab T4
+
+Готовый ноутбук: `notebooks/tanp_gating_film_colab.ipynb`.
+
+Он выполняет четыре шага:
+
+1. проверяет доступность CUDA и T4;
+2. подготавливает LastFM, MovieLens-1M и реконструированный Gowalla;
+3. последовательно обучает отдельный TaNP Gating-FiLM на каждом датасете;
+4. сохраняет три checkpoint и общую таблицу метрик.
+
+Те же команды без ноутбука:
+
+```bash
+python scripts/prepare_datasets.py --dataset all --seed 2020
+python run_experiment.py --suite configs/tanp_gating_film_colab.json --dry-run
+python run_experiment.py --suite configs/tanp_gating_film_colab.json --skip-existing
+```
+
+`requirements-colab.txt` намеренно не устанавливает PyTorch: используется уже
+установленная в Colab CUDA-сборка.
+
+### Ограничение воспроизводимости данных
+
+Авторы опубликовали готовые эпизоды только для LastFM. MovieLens-1M строится из
+официального архива GroupLens. Для Gowalla точный авторский сплит и negative
+sampling недоступны, поэтому `scripts/prepare_datasets.py` создаёт
+детерминированную реконструкцию из данных NGCF и записывает её параметры в
+`manifest.json`. Сравнение с таблицей статьи для Gowalla будет приближённым,
+пока не получены исходные данные авторов.
+
+## Результаты запуска
+
+- `artifacts/runs/<run_name>/` — checkpoint, исходный лог и точная команда запуска;
+- `results/<run_name>_metrics.csv` — компактная таблица метрик;
+- `results/tanp_gating_film_seed2020_summary.csv` — финальные метрики трёх датасетов;
+- `paper/figures/<run_name>_metrics.pdf` — векторный рисунок для статьи;
+- `paper/figures/<run_name>_metrics.png` — рисунок для быстрой проверки.
+
+## Структура
+
+```text
+.
+├── configs/                  параметры экспериментов
+├── src/cold_start_research/ вычисления и визуализация
+├── third_party/TaNP/        авторская реализация TaNP
+├── data/                     локальные исследовательские датасеты
+├── artifacts/runs/          локальные сырые результаты и checkpoints
+├── results/                 компактные таблицы
+├── paper/                   текст статьи и итоговые рисунки
+├── slides/                  материалы докладов
+├── scripts/                 настройка окружения и служебные команды
+├── docs/                    технические заметки
+└── run_experiment.py        единая точка запуска
+```
+
+Папка `Theory/` содержит локальные материалы курса и не публикуется.
+
+## Внешний код
+
+TaNP: Xixun Lin et al., *Task-adaptive Neural Process for User Cold-Start Recommendation*, WWW 2021. Исходный репозиторий подключён как Git remote `upstream`.

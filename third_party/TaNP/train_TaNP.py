@@ -20,6 +20,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', type=str, default='data/lastfm_20')#1
 parser.add_argument('--model_save_dir', type=str, default='save_model_dir')#1
 parser.add_argument('--id', type=str, default='1', help='used for save hyper-parameters.')#1
+parser.add_argument('--decoder', choices=('film', 'gating_film'), default='film',
+                    help='Task modulation decoder used by TaNP.')
+parser.add_argument('--episode_format', choices=('dense', 'ids'), default='dense',
+                    help='Store dense one-hot inputs or compact item/user ids.')
 
 parser.add_argument('--first_embedding_dim', type=int, default=32, help='Embedding dimension for item and user.')#1
 parser.add_argument('--second_embedding_dim', type=int, default=16, help='Embedding dimension for item and user.')#1
@@ -64,6 +68,8 @@ parser.add_argument('--seed', type=int, default=2020)#1
 parser.add_argument('--save', type=int, default=0)#1
 parser.add_argument('--use_cuda', type=bool, default=torch.cuda.is_available())#1
 parser.add_argument('--cpu', action='store_true', help='Ignore CUDA.')#1
+parser.add_argument('--device', choices=('auto', 'cpu', 'cuda'), default='auto',
+                    help='Execution device. --cpu is kept for backwards compatibility.')
 parser.add_argument('--support_size', type=int, default=20)#1
 parser.add_argument('--query_size', type=int, default=10)#1
 parser.add_argument('--max_len', type=int, default=200, help='The max length of interactions for each user.')
@@ -82,8 +88,12 @@ def seed_everything(seed=1023):
 seed = args.seed
 seed_everything(seed)
 
-if args.cpu:
+if args.cpu or args.device == 'cpu':
     args.use_cuda = False
+elif args.device == 'cuda':
+    if not torch.cuda.is_available():
+        raise RuntimeError('CUDA was requested, but torch.cuda.is_available() is False.')
+    args.use_cuda = True
 elif args.use_cuda:
     torch.cuda.manual_seed(args.seed)
 
@@ -113,34 +123,37 @@ if opt['use_cuda']:
 model_filename = "{}/{}.pt".format(opt['model_save_dir'], opt["id"])
 
 # /4 since sup_x, sup_y, query_x, query_y
-training_set_size = int(len(os.listdir("{}/{}/{}".format(opt["data_dir"], "training", "log"))) / 4)
+episode_dir = preprocess.episode_dir
+training_set_size = int(len([name for name in os.listdir("{}/{}/{}".format(opt["data_dir"], "training", episode_dir))
+                         if name.startswith('supp_x_') and name.endswith('.pkl')]))
 supp_xs_s = []
 supp_ys_s = []
 query_xs_s = []
 query_ys_s = []
 for idx in range(training_set_size):
-    supp_xs_s.append(pickle.load(open("{}/{}/{}/supp_x_{}.pkl".format(opt["data_dir"], "training", "log", idx), "rb")))
-    supp_ys_s.append(pickle.load(open("{}/{}/{}/supp_y_{}.pkl".format(opt["data_dir"], "training", "log", idx), "rb")))
-    query_xs_s.append(pickle.load(open("{}/{}/{}/query_x_{}.pkl".format(opt["data_dir"], "training", "log", idx), "rb")))
-    query_ys_s.append(pickle.load(open("{}/{}/{}/query_y_{}.pkl".format(opt["data_dir"], "training", "log", idx), "rb")))
+    supp_xs_s.append(pickle.load(open("{}/{}/{}/supp_x_{}.pkl".format(opt["data_dir"], "training", episode_dir, idx), "rb")))
+    supp_ys_s.append(pickle.load(open("{}/{}/{}/supp_y_{}.pkl".format(opt["data_dir"], "training", episode_dir, idx), "rb")))
+    query_xs_s.append(pickle.load(open("{}/{}/{}/query_x_{}.pkl".format(opt["data_dir"], "training", episode_dir, idx), "rb")))
+    query_ys_s.append(pickle.load(open("{}/{}/{}/query_y_{}.pkl".format(opt["data_dir"], "training", episode_dir, idx), "rb")))
 train_dataset = list(zip(supp_xs_s, supp_ys_s, query_xs_s, query_ys_s))
 
 del (supp_xs_s, supp_ys_s, query_xs_s, query_ys_s)
 
-testing_set_size = int(len(os.listdir("{}/{}/{}".format(opt["data_dir"], "testing", "log"))) / 4)
+testing_set_size = int(len([name for name in os.listdir("{}/{}/{}".format(opt["data_dir"], "testing", episode_dir))
+                        if name.startswith('supp_x_') and name.endswith('.pkl')]))
 supp_xs_s = []
 supp_ys_s = []
 query_xs_s = []
 query_ys_s = []
 for idx in range(testing_set_size):
     supp_xs_s.append(
-        pickle.load(open("{}/{}/{}/supp_x_{}.pkl".format(opt["data_dir"], "testing", "log", idx), "rb")))
+        pickle.load(open("{}/{}/{}/supp_x_{}.pkl".format(opt["data_dir"], "testing", episode_dir, idx), "rb")))
     supp_ys_s.append(
-        pickle.load(open("{}/{}/{}/supp_y_{}.pkl".format(opt["data_dir"], "testing", "log", idx), "rb")))
+        pickle.load(open("{}/{}/{}/supp_y_{}.pkl".format(opt["data_dir"], "testing", episode_dir, idx), "rb")))
     query_xs_s.append(
-        pickle.load(open("{}/{}/{}/query_x_{}.pkl".format(opt["data_dir"], "testing", "log", idx), "rb")))
+        pickle.load(open("{}/{}/{}/query_x_{}.pkl".format(opt["data_dir"], "testing", episode_dir, idx), "rb")))
     query_ys_s.append(
-        pickle.load(open("{}/{}/{}/query_y_{}.pkl".format(opt["data_dir"], "testing", "log", idx), "rb")))
+        pickle.load(open("{}/{}/{}/query_y_{}.pkl".format(opt["data_dir"], "testing", episode_dir, idx), "rb")))
 test_dataset = list(zip(supp_xs_s, supp_ys_s, query_xs_s, query_ys_s))
 
 del (supp_xs_s, supp_ys_s, query_xs_s, query_ys_s)

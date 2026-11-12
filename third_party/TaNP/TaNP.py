@@ -44,8 +44,20 @@ class NP(nn.Module):
         self.xy_to_task = TaskEncoder(self.x_dim, self.y_dim, self.taskenc_h1_dim, self.taskenc_h2_dim, self.taskenc_final_dim,
                                       self.dropout_rate)
         self.memoryunit = MemoryUnit(self.clusters_k, self.taskenc_final_dim, self.temperture)
-        #self.xz_to_y = Gating_Decoder(self.x_dim, self.z_dim, self.taskenc_final_dim, self.dec_h1_dim, self.dec_h2_dim, self.dec_h3_dim, self.y_dim, self.dropout_rate)
-        self.xz_to_y = Decoder(self.x_dim, self.z_dim, self.taskenc_final_dim, self.dec_h1_dim, self.dec_h2_dim, self.dec_h3_dim, self.y_dim, self.dropout_rate)
+        decoder_class = {
+            'film': Decoder,
+            'gating_film': Gating_Decoder,
+        }[config.get('decoder', 'film')]
+        self.xz_to_y = decoder_class(
+            self.x_dim,
+            self.z_dim,
+            self.taskenc_final_dim,
+            self.dec_h1_dim,
+            self.dec_h2_dim,
+            self.dec_h3_dim,
+            self.y_dim,
+            self.dropout_rate,
+        )
 
     def aggregate(self, z_i):
         return torch.mean(z_i, dim=0)
@@ -61,8 +73,14 @@ class NP(nn.Module):
     # embedding each (item, user) as the x for np
     def embedding(self, x):
         if_dim = self.item_emb.feature_dim
-        item_x = Variable(x[:, 0:if_dim], requires_grad=False).float()
-        user_x = Variable(x[:, if_dim:], requires_grad=False).float()
+        if x.dim() == 2 and x.size(1) == 2:
+            item_x = F.one_hot(x[:, 0].long(), num_classes=if_dim).float()
+            user_x = F.one_hot(
+                x[:, 1].long(), num_classes=self.user_emb.feature_dim
+            ).float()
+        else:
+            item_x = Variable(x[:, 0:if_dim], requires_grad=False).float()
+            user_x = Variable(x[:, if_dim:], requires_grad=False).float()
         item_emb = self.item_emb(item_x)
         user_emb = self.user_emb(user_x)
         x = torch.cat((item_emb, user_emb), 1)

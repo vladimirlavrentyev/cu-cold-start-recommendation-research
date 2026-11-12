@@ -72,6 +72,16 @@ class Preprocess(object):
         self.support_size = opt['support_size']
         self.query_size = opt['query_size']
         self.max_len = opt['max_len']
+        self.episode_format = opt.get('episode_format', 'dense')
+        if self.episode_format == 'ids':
+            self.episode_dir = (
+                'log_ids_seed{}_tr{}_va{}_s{}_q{}_max{}'.format(
+                    opt['seed'], self.train_ratio, self.valid_ratio,
+                    self.support_size, self.query_size, self.max_len
+                )
+            )
+        else:
+            self.episode_dir = 'log'
         # save one-hot dimension length
         uf_dim, if_dim = self.preprocess(self.dataset_path)
         self.uf_dim = uf_dim
@@ -81,17 +91,17 @@ class Preprocess(object):
         """ Preprocess the data and convert to ids. """
         #Create training-validation-test datasets
         print('Create training, validation and test data from scratch!')
-        with open('./{}/interaction_dict_x.json'.format(dataset_path), 'r', encoding='utf-8') as f:
+        with open(os.path.join(dataset_path, 'interaction_dict_x.json'), 'r', encoding='utf-8') as f:
             inter_dict_x = json.loads(f.read())
-        with open('./{}/interaction_dict_y.json'.format(dataset_path), 'r', encoding='utf-8') as f:
+        with open(os.path.join(dataset_path, 'interaction_dict_y.json'), 'r', encoding='utf-8') as f:
             inter_dict_y = json.loads(f.read())
         print('The size of total interactions is %d.' % (count_values(inter_dict_x)))  # 42346
         assert count_values(inter_dict_x) == count_values(inter_dict_y)
 
-        with open('./{}/user_list.json'.format(dataset_path), 'r', encoding='utf-8') as f:
+        with open(os.path.join(dataset_path, 'user_list.json'), 'r', encoding='utf-8') as f:
             userids = json.loads(f.read())
 
-        with open('./{}/item_list.json'.format(dataset_path), 'r', encoding='utf-8') as f:
+        with open(os.path.join(dataset_path, 'item_list.json'), 'r', encoding='utf-8') as f:
             itemids = json.loads(f.read())
 
         #userids = list(inter_dict_x.keys())
@@ -115,9 +125,13 @@ class Preprocess(object):
             item_set = item_set.union(i)
 
         # Construct one-hot dictionary
-        user_dict = to_onehot_dict(userids)
-        # only items contained in all data are encoded.
-        item_dict = to_onehot_dict(itemids)
+        if self.episode_format == 'dense':
+            user_dict = to_onehot_dict(userids)
+            # only items contained in all data are encoded.
+            item_dict = to_onehot_dict(itemids)
+        else:
+            user_dict = None
+            item_dict = None
 
         # This part of data is not used, so we do not process it temporally.
         valid_dict_x = construct_dictionary(valid_users, inter_dict_x)
@@ -156,9 +170,28 @@ class Preprocess(object):
 
         def generate_episodes(dict_x, dict_y, category, support_size, query_size, max_len, dir="log"):
             idx = 0
-            if not os.path.exists("{}/{}/{}".format(dataset_path, category, dir)):
-                os.makedirs("{}/{}/{}".format(dataset_path, category, dir))
-                os.makedirs("{}/{}/{}".format(dataset_path, category, "evidence"))
+            episode_path = "{}/{}/{}".format(dataset_path, category, dir)
+            evidence_dir = "evidence" if dir == "log" else "evidence_{}".format(dir)
+            evidence_path = "{}/{}/{}".format(dataset_path, category, evidence_dir)
+            complete_marker = os.path.join(episode_path, ".complete")
+            should_generate = not os.path.exists(episode_path)
+            if self.episode_format == 'ids' and os.path.exists(episode_path):
+                if os.path.exists(complete_marker):
+                    should_generate = False
+                else:
+                    existing_pickles = [
+                        name for name in os.listdir(episode_path)
+                        if name.endswith('.pkl')
+                    ]
+                    if existing_pickles:
+                        raise RuntimeError(
+                            "Incomplete compact episode cache: {}. Remove this "
+                            "directory and run preprocessing again.".format(episode_path)
+                        )
+                    should_generate = True
+            if should_generate:
+                os.makedirs(episode_path, exist_ok=True)
+                os.makedirs(evidence_path, exist_ok=True)
                 for _, user_id in enumerate(dict_x.keys()):
                     u_id = int(user_id)
                     seen_music_len = len(dict_x[str(u_id)])
@@ -170,24 +203,34 @@ class Preprocess(object):
                     tmp_x = np.array(dict_x[str(u_id)])
                     tmp_y = np.array(dict_y[str(u_id)])
 
-                    support_x_app = None
-                    for m_id in tmp_x[indices[:support_size]]:
-                        m_id = int(m_id)
-                        tmp_x_converted = torch.cat((item_dict[m_id], user_dict[u_id]), 1)
-                        try:
-                            support_x_app = torch.cat((support_x_app, tmp_x_converted), 0)
-                        except:
-                            support_x_app = tmp_x_converted
+                    if self.episode_format == 'ids':
+                        support_x_app = torch.LongTensor([
+                            [int(m_id), u_id]
+                            for m_id in tmp_x[indices[:support_size]]
+                        ])
+                        query_x_app = torch.LongTensor([
+                            [int(m_id), u_id]
+                            for m_id in tmp_x[indices[support_size:]]
+                        ])
+                    else:
+                        support_x_app = None
+                        for m_id in tmp_x[indices[:support_size]]:
+                            m_id = int(m_id)
+                            tmp_x_converted = torch.cat((item_dict[m_id], user_dict[u_id]), 1)
+                            try:
+                                support_x_app = torch.cat((support_x_app, tmp_x_converted), 0)
+                            except:
+                                support_x_app = tmp_x_converted
 
-                    query_x_app = None
-                    for m_id in tmp_x[indices[support_size:]]:
-                        m_id = int(m_id)
-                        u_id = int(user_id)
-                        tmp_x_converted = torch.cat((item_dict[m_id], user_dict[u_id]), 1)
-                        try:
-                            query_x_app = torch.cat((query_x_app, tmp_x_converted), 0)
-                        except:
-                            query_x_app = tmp_x_converted
+                        query_x_app = None
+                        for m_id in tmp_x[indices[support_size:]]:
+                            m_id = int(m_id)
+                            u_id = int(user_id)
+                            tmp_x_converted = torch.cat((item_dict[m_id], user_dict[u_id]), 1)
+                            try:
+                                query_x_app = torch.cat((query_x_app, tmp_x_converted), 0)
+                            except:
+                                query_x_app = tmp_x_converted
 
                     support_y_app = torch.FloatTensor(tmp_y[indices[:support_size]])
                     query_y_app = torch.FloatTensor(tmp_y[indices[support_size:]])
@@ -197,20 +240,23 @@ class Preprocess(object):
                     pickle.dump(query_x_app, open("{}/{}/{}/query_x_{}.pkl".format(dataset_path, category, dir, idx), "wb"))
                     pickle.dump(query_y_app, open("{}/{}/{}/query_y_{}.pkl".format(dataset_path, category, dir, idx), "wb"))
                     # used for evidence candidate selection
-                    with open("{}/{}/{}/supp_x_{}_u_m_ids.txt".format(dataset_path, category, "evidence", idx), "w") as f:
+                    with open("{}/{}/{}/supp_x_{}_u_m_ids.txt".format(dataset_path, category, evidence_dir, idx), "w") as f:
                         for m_id in tmp_x[indices[:support_size]]:
                             f.write("{}\t{}\n".format(u_id, m_id))
-                    with open("{}/{}/{}/query_x_{}_u_m_ids.txt".format(dataset_path, category, "evidence", idx), "w") as f:
+                    with open("{}/{}/{}/query_x_{}_u_m_ids.txt".format(dataset_path, category, evidence_dir, idx), "w") as f:
                         for m_id in tmp_x[indices[support_size:]]:
                             f.write("{}\t{}\n".format(u_id, m_id))
                     idx+=1
+                if self.episode_format == 'ids':
+                    with open(complete_marker, "w") as marker:
+                        marker.write("complete\n")
 
         print("Generate eposide data for training.")
-        generate_episodes(training_dict_x, training_dict_y, "training", self.support_size, self.query_size, self.max_len)
+        generate_episodes(training_dict_x, training_dict_y, "training", self.support_size, self.query_size, self.max_len, self.episode_dir)
         print("Generate eposide data for validation.")
-        generate_episodes(valid_dict_x, valid_dict_y, "validation", self.support_size, self.query_size, self.max_len)
+        generate_episodes(valid_dict_x, valid_dict_y, "validation", self.support_size, self.query_size, self.max_len, self.episode_dir)
         print("Generate eposide data for testing.")
-        generate_episodes(test_dict_x, test_dict_y, "testing", self.support_size, self.query_size, self.max_len)
+        generate_episodes(test_dict_x, test_dict_y, "testing", self.support_size, self.query_size, self.max_len, self.episode_dir)
 
         return len(userids), len(itemids)
 

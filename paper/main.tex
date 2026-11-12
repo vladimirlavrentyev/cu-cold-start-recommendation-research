@@ -1,0 +1,211 @@
+\documentclass[12pt,a4paper]{article}
+
+% ---------- Кодировка и язык ----------
+\usepackage{cmap}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+
+% ---------- Математика ----------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+
+% ---------- Таблицы и рисунки ----------
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+
+% ---------- Оформление ----------
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage[authoryear,round]{natbib}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+\onehalfspacing
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+
+% ---------- Данные работы ----------
+% Рабочие формулировки уточняются по мере получения результатов.
+\newcommand{\researchtitle}{Исследование переноса группового знания в нейронных процессах для cold-start рекомендаций}
+\newcommand{\researchtitleen}{Group Knowledge Transfer in Neural Processes for Cold-Start Recommendation}
+\newcommand{\authorname}{Владимир Лаврентьев}
+\newcommand{\supervisorname}{Александр Геннадьевич Дьяконов}
+\newcommand{\coursename}{Научная студия}
+\newcommand{\placeholder}[1]{\textcolor{gray}{\textit{[#1]}}}
+
+\hypersetup{
+    pdftitle={\researchtitle},
+    pdfauthor={\authorname}
+}
+
+\begin{document}
+\pagenumbering{gobble}
+
+% ---------- Титульный лист ----------
+\begin{titlepage}
+    \begin{center}
+        \large Центральный университет
+
+        \vspace{0.5cm}
+        \large Курс «\coursename»
+
+        \vfill
+
+        \LARGE\textbf{\researchtitle}
+
+        \vspace{0.5cm}
+        \large \researchtitleen
+
+        \vspace{1cm}
+        \large Исследовательская работа
+    \end{center}
+
+    \vfill
+
+    \begin{flushright}
+        \begin{tabular}{@{}ll@{}}
+            Автор: & \authorname \\
+            Научный руководитель: & \supervisorname
+        \end{tabular}
+    \end{flushright}
+
+    \vfill
+
+    \begin{center}
+        Москва, 2026
+    \end{center}
+\end{titlepage}
+\pagenumbering{roman}
+
+% ---------- Аннотации ----------
+\section*{Аннотация}
+\addcontentsline{toc}{section}{Аннотация}
+% Ориентир: 200--250 слов, 5--7 предложений.
+% Кратко отразите актуальность, цель, метод, основные результаты и вывод.
+\placeholder{Текст аннотации на русском языке.}
+
+\vspace{0.5cm}
+\noindent\textbf{Ключевые слова:}
+\placeholder{5--7 ключевых слов.}
+
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+% Английская версия должна передавать тот же смысл, что и русская аннотация.
+\placeholder{Abstract in English.}
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:}
+\placeholder{5--7 keywords.}
+
+\newpage
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+
+% ---------- Основной текст ----------
+\section{Введение}
+% Рекомендуемая логика введения:
+% 1) мотивация и практическая значимость;
+% 2) объект исследования и основные термины;
+% 3) исследовательская проблема;
+% 4) текущее состояние области;
+% 5) цель и задачи;
+% 6) предлагаемая идея и ожидаемая новизна;
+% 7) ограничения существующих работ;
+% 8) цель вычислительного эксперимента.
+\placeholder{Почему задача важна, что именно исследуется и какой вклад планируется получить.}
+
+\section{Обзор литературы}
+% Сгруппируйте работы по подходам, а не пересказывайте статьи по одной.
+% Покажите, что уже решено, какие ограничения остаются и где находится ваша работа.
+\placeholder{Связанные исследования, базовые методы и незакрытый исследовательский вопрос.}
+
+\section{Постановка задачи}
+% Формально опишите:
+% - данные и доступную информацию о пользователях и объектах;
+% - режим cold-start и разбиение взаимодействий на support/query;
+% - класс моделей или алгоритмов;
+% - функцию обучения;
+% - внешние метрики качества;
+% - схему валидации и ограничения.
+\placeholder{Формальная постановка задачи и обозначения.}
+
+\section{Предлагаемый метод}
+% Сначала дайте идею простыми словами, затем опишите алгоритм и его отличие от baseline.
+% Для текущего проекта здесь можно отделить базовый TaNP от предлагаемого улучшения.
+\placeholder{Описание базового метода, предлагаемого изменения и ожидаемого эффекта.}
+
+\section{Вычислительный эксперимент}
+
+\subsection{Данные и подготовка выборки}
+% Укажите источник, размер, признаки, правила фильтрации и способ формирования задач.
+\placeholder{Описание датасета и воспроизводимого препроцессинга.}
+
+\subsection{Экспериментальный протокол}
+% Зафиксируйте разбиение, baseline, конкурирующие методы, гиперпараметры,
+% число запусков, random seeds, вычислительную среду и бюджет обучения.
+\placeholder{Единые условия сравнения методов.}
+
+\subsection{Метрики}
+% Объясните, какую сторону качества измеряет каждая метрика и почему она нужна.
+\placeholder{Основные и дополнительные метрики.}
+
+\section{Результаты и обсуждение}
+% Начните с главной таблицы сравнения. Затем добавьте анализ по числу взаимодействий,
+% группам пользователей, абляции, устойчивости и вычислительной стоимости.
+\placeholder{Результаты, их интерпретация, ограничения и возможные причины наблюдаемых эффектов.}
+
+% Пример заготовки таблицы. Раскомментируйте, когда появятся результаты.
+% \begin{table}[H]
+%     \centering
+%     \caption{Сравнение методов на тестовой выборке}
+%     \label{tab:main-results}
+%     \begin{tabular}{lcc}
+%         \toprule
+%         Метод & Метрика 1 & Метрика 2 \\
+%         \midrule
+%         Baseline & -- & -- \\
+%         Предлагаемый метод & -- & -- \\
+%         \bottomrule
+%     \end{tabular}
+% \end{table}
+
+% Пример заготовки рисунка. Файлы рисунков храните в папке figures/.
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{example.pdf}
+%     \caption{Краткое содержательное название рисунка}
+%     \label{fig:example}
+% \end{figure}
+
+\section{Заключение}
+% Кратко ответьте на исследовательский вопрос, перечислите основные результаты,
+% ограничения работы и следующие шаги. Не добавляйте здесь новые эксперименты.
+\placeholder{Главные выводы и направления дальнейшей работы.}
+
+% ---------- Библиография ----------
+\clearpage
+\addcontentsline{toc}{section}{Список литературы}
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+% ---------- Приложения ----------
+\clearpage
+\appendix
+\section{Дополнительные материалы}
+% Сюда можно вынести подробные гиперпараметры, дополнительные таблицы,
+% схемы архитектуры и результаты вспомогательных экспериментов.
+\placeholder{Материалы, которые важны для воспроизводимости, но перегружают основной текст.}
+
+\end{document}
