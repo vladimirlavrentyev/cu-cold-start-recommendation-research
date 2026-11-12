@@ -90,6 +90,22 @@ sampling недоступны, поэтому `scripts/prepare_datasets.py` со
 - `paper/figures/<run_name>_metrics.pdf` — векторный рисунок для статьи;
 - `paper/figures/<run_name>_metrics.png` — рисунок для быстрой проверки.
 
+### Опубликованный baseline
+
+Завершены три запуска TaNP Gating-FiLM с seed 2020. Ниже приведены метрики
+последней, сотой эпохи при $K=10$.
+
+| Датасет | Precision@10 | NDCG@10 | MAP@10 |
+|---|---:|---:|---:|
+| LastFM | 87.42% | 80.81% | 84.95% |
+| MovieLens-1M | 62.17% | 75.11% | 50.65% |
+| Gowalla (реконструкция) | 62.08% | 60.41% | 45.16% |
+
+Полная таблица: `results/tanp_gating_film_seed2020_summary.csv`. Сводный
+рисунок: `paper/figures/tanp_gating_film_seed2020_summary.pdf`. Gowalla
+использует реконструированную выборку и поэтому не сравнивается напрямую с
+опубликованным числом статьи.
+
 ## Структура
 
 ```text

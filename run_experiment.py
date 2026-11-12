@@ -116,6 +116,7 @@ def main() -> None:
         save_suite_summary(
             summary_runs,
             suite.results_dir / f"{suite.suite_name}_summary.csv",
+            suite.experiments[0].figures_dir,
         )
 
 

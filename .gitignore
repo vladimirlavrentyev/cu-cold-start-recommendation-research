@@ -27,8 +27,11 @@ artifacts/runs/*
 results/*
 !results/.gitkeep
 !results/README.md
+!results/tanp_gating_film_seed2020_summary.csv
 paper/figures/*
 !paper/figures/.gitkeep
+!paper/figures/tanp_gating_film_seed2020_summary.png
+!paper/figures/tanp_gating_film_seed2020_summary.pdf
 
 # LaTeX build files
 paper/*.aux

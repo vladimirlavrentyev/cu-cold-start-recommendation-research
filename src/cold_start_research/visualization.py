@@ -109,22 +109,102 @@ def build_outputs(
 def save_suite_summary(
     runs: List[Dict[str, object]],
     output_path: Path,
+    figures_dir: Path | None = None,
 ) -> None:
     fieldnames = ["run_name", "dataset", "decoder", "seed"] + COLUMNS
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_rows: List[Dict[str, object]] = []
     with output_path.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fieldnames)
         writer.writeheader()
         for run in runs:
             rows = read_tanp_log(Path(run["log_path"]))
             final_row = rows[-1]
-            writer.writerow(
+            summary_row = {
+                "run_name": run["run_name"],
+                "dataset": run["dataset"],
+                "decoder": run["decoder"],
+                "seed": run["seed"],
+                **final_row,
+            }
+            writer.writerow(summary_row)
+            summary_rows.append(summary_row)
+    print(f"Сводная таблица: {output_path}")
+    if figures_dir is not None:
+        figure_stem = figures_dir / output_path.stem
+        save_suite_summary_figure(summary_rows, figure_stem)
+        print(
+            "Сводные рисунки: "
+            f"{figure_stem.with_suffix('.png')}, "
+            f"{figure_stem.with_suffix('.pdf')}"
+        )
+
+
+def read_suite_summary(summary_path: Path) -> List[Dict[str, object]]:
+    with summary_path.open("r", encoding="utf-8", newline="") as stream:
+        reader = csv.DictReader(stream)
+        rows: List[Dict[str, object]] = []
+        for row in reader:
+            rows.append(
                 {
-                    "run_name": run["run_name"],
-                    "dataset": run["dataset"],
-                    "decoder": run["decoder"],
-                    "seed": run["seed"],
-                    **final_row,
+                    **row,
+                    **{
+                        column: float(row[column])
+                        for column in COLUMNS
+                    },
                 }
             )
-    print(f"Сводная таблица: {output_path}")
+    if not rows:
+        raise ValueError(f"В сводной таблице нет строк: {summary_path}")
+    return rows
+
+
+def save_suite_summary_figure(
+    rows: List[Dict[str, object]],
+    output_stem: Path,
+) -> None:
+    import matplotlib.pyplot as plt
+
+    dataset_labels = {
+        "lastfm_20": "LastFM",
+        "movielens_1m": "MovieLens-1M",
+        "gowalla_reconstructed": "Gowalla (reconstructed)",
+    }
+    colors = ["#2563EB", "#0D9488", "#F97316"]
+    cutoffs = (5, 7, 10)
+    figure, axes = plt.subplots(1, 3, figsize=(11.2, 3.7), sharex=True)
+
+    for axis, (prefix, title) in zip(
+        axes,
+        (("precision", "Precision"), ("ndcg", "NDCG"), ("map", "MAP")),
+    ):
+        for row, color in zip(rows, colors):
+            axis.plot(
+                cutoffs,
+                [float(row[f"{prefix}{cutoff}"]) for cutoff in cutoffs],
+                label=dataset_labels.get(str(row["dataset"]), str(row["dataset"])),
+                color=color,
+                linewidth=2.2,
+            )
+        axis.set_title(title)
+        axis.set_xlabel("K")
+        axis.set_xticks(cutoffs)
+        axis.set_ylim(0.4, 0.92)
+        axis.grid(axis="y", alpha=0.22)
+
+    axes[0].set_ylabel("Metric value")
+    handles, labels = axes[-1].get_legend_handles_labels()
+    figure.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.03),
+        ncol=3,
+        frameon=False,
+    )
+    figure.suptitle("TaNP Gating-FiLM baseline, seed 2020", y=1.12)
+    figure.tight_layout()
+    output_stem.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(output_stem.with_suffix(".png"), dpi=180, bbox_inches="tight")
+    figure.savefig(output_stem.with_suffix(".pdf"), bbox_inches="tight")
+    plt.close(figure)

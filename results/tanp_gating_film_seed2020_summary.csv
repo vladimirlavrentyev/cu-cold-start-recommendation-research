@@ -1,0 +1,4 @@
+run_name,dataset,decoder,seed,epoch,train_loss,precision5,ndcg5,map5,precision7,ndcg7,map7,precision10,ndcg10,map10
+tanp_gating_film_lastfm_seed2020,lastfm_20,gating_film,2020,99.0,23.275995,0.7667,0.7723,0.7122,0.7727,0.7563,0.7311,0.8742,0.8081,0.8495
+tanp_gating_film_movielens_seed2020,movielens_1m,gating_film,2020,99.0,23.867565,0.5897,0.7456,0.4855,0.5968,0.7459,0.4838,0.6217,0.7511,0.5065
+tanp_gating_film_gowalla_seed2020,gowalla_reconstructed,gating_film,2020,99.0,23.172153,0.613,0.5942,0.4672,0.6197,0.6018,0.4585,0.6208,0.6041,0.4516
