@@ -40,7 +40,7 @@
 \newcommand{\researchtitle}{Исследование переноса группового знания в нейронных процессах для cold-start рекомендаций}
 \newcommand{\researchtitleen}{Group Knowledge Transfer in Neural Processes for Cold-Start Recommendation}
 \newcommand{\authorname}{Владимир Лаврентьев}
-\newcommand{\supervisorname}{Александр Геннадьевич Дьяконов}
+\newcommand{\supervisorname}{Александр Дьяконов}
 \newcommand{\coursename}{Научная студия}
 \newcommand{\placeholder}[1]{\textcolor{gray}{\textit{[#1]}}}
 
@@ -75,8 +75,8 @@
 
     \begin{flushright}
         \begin{tabular}{@{}ll@{}}
-            Автор: & \authorname \\
-            Научный руководитель: & \supervisorname
+            Автор: & Владимир Лаврентьев \\
+            Научный руководитель: & Александр Дьяконов
         \end{tabular}
     \end{flushright}
 
@@ -93,20 +93,62 @@
 \addcontentsline{toc}{section}{Аннотация}
 % Ориентир: 200--250 слов, 5--7 предложений.
 % Кратко отразите актуальность, цель, метод, основные результаты и вывод.
-\placeholder{Текст аннотации на русском языке.}
+Работа посвящена исследованию переноса группового знания в нейронных процессах
+для рекомендаций пользователям с малой историей взаимодействий. Модели TaNP и
+FANP используют опыт других пользовательских задач, однако улучшение средних
+метрик не исключает локального ухудшения рекомендаций, если новый пользователь
+ошибочно сопоставлен с нерелевантной группой. Цель работы --- количественно
+оценить такой негативный перенос и определить, можно ли выявлять его по
+доступной истории пользователя и внутренним характеристикам модели. Для этого
+формируется единый экспериментальный протокол, включающий воспроизведение TaNP
+и FANP, сопоставимый вариант модели без группового компонента и анализ
+индивидуальной разницы метрик между режимами с переносом и без него в
+одинаковых условиях оценки и обучения. На
+подготовительном этапе воспроизведена открытая реализация TaNP Gating-FiLM на
+LastFM, MovieLens-1M и реконструированном Gowalla при seed 2020. На последней
+эпохе получены значения Precision@10, NDCG@10 и MAP@10, равные соответственно
+87.42\%, 80.81\% и 84.95\% для LastFM; 62.17\%, 75.11\% и 50.65\% для
+MovieLens-1M; 62.08\%, 60.41\% и 45.16\% для Gowalla. Результаты LastFM и
+MovieLens-1M имеют тот же порядок, что и опубликованные показатели TaNP, тогда
+как Gowalla используется только как внутренний baseline из-за отсутствия
+точного авторского разбиения данных. Полученный воспроизводимый baseline
+задаёт контрольную точку для последующего анализа группового компонента на
+уровне отдельных пользователей; вывод о наличии негативного переноса будет
+сделан после сравнения с режимом, использующим только личное представление.
 
 \vspace{0.5cm}
 \noindent\textbf{Ключевые слова:}
-\placeholder{5--7 ключевых слов.}
+рекомендательные системы, холодный старт, нейронные процессы, метаобучение,
+перенос знаний, негативный перенос.
 
 \section*{Abstract}
 \addcontentsline{toc}{section}{Abstract}
 % Английская версия должна передавать тот же смысл, что и русская аннотация.
-\placeholder{Abstract in English.}
+This work studies group-knowledge transfer in neural processes for recommending
+items to users with short interaction histories. TaNP and FANP reuse experience
+from other user tasks, but improvements in aggregate metrics do not rule out a
+local degradation when a new user is incorrectly matched to an irrelevant
+group. The objective is to quantify this negative transfer and determine
+whether it can be detected from the available user history and the internal
+characteristics of the model. We define a unified experimental protocol that
+includes reproducing TaNP and FANP, constructing a comparable model variant
+without the group component, and analysing per-user metric differences between
+the transfer and personal-only settings. As a preparatory stage, we reproduced
+the public TaNP Gating-FiLM implementation on LastFM, MovieLens-1M, and a
+reconstructed Gowalla dataset using seed 2020. At the final epoch, the
+Precision@10, NDCG@10, and MAP@10 values were 87.42\%, 80.81\%, and 84.95\%
+for LastFM; 62.17\%, 75.11\%, and 50.65\% for MovieLens-1M; and 62.08\%,
+60.41\%, and 45.16\% for Gowalla, respectively. The LastFM and MovieLens-1M
+results are of the same order as the published TaNP results, whereas Gowalla is
+used only as an internal baseline because the exact authors' data split is not
+available. This reproducible baseline provides a reference point for analysing
+the group component at the individual-user level; the presence of negative
+transfer will be assessed after comparison with the personal-only setting.
 
 \vspace{0.5cm}
 \noindent\textbf{Keywords:}
-\placeholder{5--7 keywords.}
+recommender systems, cold start, neural processes, meta-learning, knowledge
+transfer, negative transfer.
 
 \newpage
 \tableofcontents
