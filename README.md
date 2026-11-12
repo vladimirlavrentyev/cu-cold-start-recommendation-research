@@ -12,6 +12,7 @@
 - авторский Gating-FiLM включён как явный вариант декодера;
 - подготовлены CPU-конфигурации и последовательный запуск трёх датасетов на Colab T4;
 - компактные эпизоды хранят идентификаторы вместо гигантских one-hot-тензоров;
+- обучение сохраняет полное состояние каждые 5 эпох и продолжается после разрыва Colab;
 - вычисления и построение графиков разделены на разные модули;
 - `run_experiment.py` служит единственной точкой запуска;
 - результаты сохраняются отдельно от checkpoints и исходного кода.
@@ -66,7 +67,7 @@ python run_experiment.py --config configs/baseline_cpu.json
 ```bash
 python scripts/prepare_datasets.py --dataset all --seed 2020
 python run_experiment.py --suite configs/tanp_gating_film_colab.json --dry-run
-python run_experiment.py --suite configs/tanp_gating_film_colab.json --skip-existing
+python run_experiment.py --suite configs/tanp_gating_film_colab.json --skip-existing --resume
 ```
 
 `requirements-colab.txt` намеренно не устанавливает PyTorch: используется уже

@@ -12,7 +12,7 @@ from torch.autograd import Variable
 import json
 from utils.loader import Preprocess
 from TaNP import Trainer
-from TaNP_training import training
+from TaNP_training import training, load_training_checkpoint
 from utils import helper
 from eval import testing
 
@@ -74,6 +74,10 @@ parser.add_argument('--support_size', type=int, default=20)#1
 parser.add_argument('--query_size', type=int, default=10)#1
 parser.add_argument('--max_len', type=int, default=200, help='The max length of interactions for each user.')
 parser.add_argument('--context_min', type=int, default=20, help='Minimum size of context range.')
+parser.add_argument('--checkpoint_every', type=int, default=10,
+                    help='Save a resumable checkpoint every N epochs; 0 disables it.')
+parser.add_argument('--resume', action='store_true',
+                    help='Continue from <id>.checkpoint.pt when it exists.')
 args = parser.parse_args()
 
 def seed_everything(seed=1023):
@@ -102,12 +106,28 @@ opt = vars(args)
 # print model info
 helper.print_config(opt)
 helper.ensure_dir(opt["model_save_dir"], verbose=True)
+model_filename = "{}/{}.pt".format(opt['model_save_dir'], opt["id"])
+checkpoint_filename = "{}/{}.checkpoint.pt".format(
+    opt['model_save_dir'], opt["id"]
+)
+resume_available = args.resume and os.path.exists(checkpoint_filename)
+if (
+    os.path.exists(checkpoint_filename)
+    and not args.resume
+    and not os.path.exists(model_filename)
+):
+    raise RuntimeError(
+        "A resumable checkpoint exists. Pass --resume to continue without "
+        "overwriting the existing log."
+    )
+preserve_log = resume_available or os.path.exists(model_filename)
 # save model config
 helper.save_config(opt, opt["model_save_dir"] + "/" +opt["id"] + '.config', verbose=True)
 # record training log
 file_logger = helper.FileLogger(opt["model_save_dir"] + '/' + opt['id'] + ".log",
                                 header="# epoch\ttrain_loss\tprecision5\tNDCG5\tMAP5\tprecision7"
-                                       "\tNDCG7\tMAP7\tprecision10\tNDCG10\tMAP10")
+                                       "\tNDCG7\tMAP7\tprecision10\tNDCG10\tMAP10",
+                                append=preserve_log)
 
 preprocess = Preprocess(opt)
 print("Preprocess is done.")
@@ -119,8 +139,6 @@ opt['if_dim'] = preprocess.if_dim
 trainer = Trainer(opt)
 if opt['use_cuda']:
     trainer.cuda()
-
-model_filename = "{}/{}.pt".format(opt['model_save_dir'], opt["id"])
 
 # /4 since sup_x, sup_y, query_x, query_y
 episode_dir = preprocess.episode_dir
@@ -161,14 +179,35 @@ del (supp_xs_s, supp_ys_s, query_xs_s, query_ys_s)
 print("# epoch\ttrain_loss\tprecision5\tNDCG5\tMAP5\tprecision7\tNDCG7\tMAP7\tprecision10\tNDCG10\tMAP10")
 
 if not os.path.exists(model_filename):
-    print("Start training...")
+    start_epoch = 0
+    sample_order = None
+    if resume_available:
+        start_epoch, sample_order = load_training_checkpoint(
+            trainer, checkpoint_filename
+        )
+        print("Resume training from epoch {}...".format(start_epoch))
+    else:
+        print("Start training...")
     training(trainer, opt, train_dataset, test_dataset, batch_size=opt['batch_size'], num_epoch=opt['num_epoch'],
-            model_save=opt["save"], model_filename=model_filename, logger=file_logger)
+            model_save=opt["save"], model_filename=model_filename, logger=file_logger,
+            start_epoch=start_epoch, sample_order=sample_order,
+            checkpoint_filename=checkpoint_filename,
+            checkpoint_every=opt['checkpoint_every'])
 
 else:
     print("Load pre-trained model...")
     opt = helper.load_config(model_filename[:-2]+"config")
     helper.print_config(opt)
-    trained_state_dict = torch.load(model_filename)
+    try:
+        trained_state_dict = torch.load(
+            model_filename,
+            map_location=next(trainer.parameters()).device,
+            weights_only=True,
+        )
+    except TypeError:
+        trained_state_dict = torch.load(
+            model_filename,
+            map_location=next(trainer.parameters()).device,
+        )
     trainer.load_state_dict(trained_state_dict)
 

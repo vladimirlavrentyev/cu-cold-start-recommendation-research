@@ -49,6 +49,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Использовать уже существующий завершённый лог вместо повторного обучения.",
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Продолжить незавершённый запуск из промежуточного checkpoint.",
+    )
     return parser.parse_args()
 
 
@@ -62,7 +67,12 @@ def run_one(config: ExperimentConfig, args: argparse.Namespace) -> Path:
             raise FileNotFoundError(f"Не найден лог запуска: {log_path}")
         print(f"Используется существующий запуск: {log_path}")
     else:
-        log_path = run_training(config, PROJECT_ROOT, dry_run=args.dry_run)
+        log_path = run_training(
+            config,
+            PROJECT_ROOT,
+            dry_run=args.dry_run,
+            resume=args.resume,
+        )
 
     if args.dry_run or args.skip_plots:
         return log_path
