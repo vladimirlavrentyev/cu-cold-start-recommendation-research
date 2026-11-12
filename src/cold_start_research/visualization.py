@@ -59,8 +59,7 @@ def save_metrics_figure(rows: List[Dict[str, float]], output_stem: Path) -> None
         epochs,
         [row["train_loss"] for row in rows],
         color="#172554",
-        marker="o",
-        markersize=4,
+        linewidth=1.8,
     )
     axes[0].set_title("Training loss")
     axes[0].set_xlabel("Epoch")
@@ -77,8 +76,7 @@ def save_metrics_figure(rows: List[Dict[str, float]], output_stem: Path) -> None
             [row[key] for row in rows],
             label=label,
             color=color,
-            marker="o",
-            markersize=4,
+            linewidth=1.8,
         )
     axes[1].set_title("Ranking quality")
     axes[1].set_xlabel("Epoch")
