@@ -3,12 +3,7 @@ import random
 import torch
 import numpy as np
 import pickle
-import codecs
-import re
 import os
-import datetime
-import tqdm
-import pandas as pd
 
 #convert userids to userdict key-id(int), val:onehot_vector(tensor)
 #element in list is str type.
